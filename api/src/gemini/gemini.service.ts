@@ -41,10 +41,7 @@ export class GeminiService {
 
       const response: GenerateContentResult =
         await this.model.generateContent(request);
-
-      console.log(response);
-
-      const content =
+      const content: string =
         response.response?.candidates?.[0]?.content?.parts?.[0]?.text ??
         'No response from AI';
 

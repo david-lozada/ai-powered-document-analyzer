@@ -5,10 +5,14 @@ import { GeminiService } from './gemini/gemini.service';
 import { GeminiModule } from './gemini/gemini.module';
 import { DocumentController } from './document/document.controller';
 import { MulterModule } from '@nestjs/platform-express';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    CacheModule.register({
       isGlobal: true,
     }),
     MulterModule.register({
