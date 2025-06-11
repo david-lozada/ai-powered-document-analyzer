@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-// import { CacheModule } from './cache/cache.module';
 import { TextExtractionService } from './textExtraction/textExtraction.service';
-import { OpenaiService } from './openai/openai.service';
+import { GeminiService } from './gemini/gemini.service';
+import { GeminiModule } from './gemini/gemini.module';
 import { DocumentController } from './document/document.controller';
 import { MulterModule } from '@nestjs/platform-express';
-import { OpenaiModule } from './openai/openai.module';
 
 @Module({
   imports: [
@@ -13,11 +12,11 @@ import { OpenaiModule } from './openai/openai.module';
       isGlobal: true,
     }),
     MulterModule.register({
-      dest: './uploads'
+      dest: './uploads',
     }),
-    OpenaiModule
+    GeminiModule,
   ],
   controllers: [DocumentController],
-  providers: [TextExtractionService, OpenaiService],
+  providers: [TextExtractionService, GeminiService],
 })
 export class AppModule {}

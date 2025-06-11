@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
+import fs from 'node:fs';
 import pdfParse from 'pdf-parse';
 
 @Injectable()
@@ -8,12 +8,15 @@ export class TextExtractionService {
     try {
       // Read the PDF file
       const fileBuffer = fs.readFileSync(filePath);
-
+      // console.log('fileBuffer :>> ', fileBuffer);
       // Extract text from the PDF using pdf-parse
-      const { text } = await pdfParse(fileBuffer);
+      const response = await pdfParse(fileBuffer);
+      console.log('text :>> ', response);
 
       // Return the extracted text
-      return text;
+      return (
+        response.text || 'Document is empty or text could not be extracted'
+      );
     } catch (err) {
       console.error('Error recognizing text:', err);
       throw new Error('Failed to recognize text');

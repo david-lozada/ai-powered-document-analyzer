@@ -1,13 +1,18 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TextExtractionService } from '../textExtraction/textExtraction.service';
-import { OpenaiService } from '../openai/openai.service';
+import { GeminiService } from '../gemini/gemini.service';
 
 @Controller('document')
 export class DocumentController {
   constructor(
     private readonly textExtractionService: TextExtractionService,
-    private readonly openaiService: OpenaiService,
+    private readonly geminiService: GeminiService,
   ) {}
 
   /**
@@ -20,10 +25,10 @@ export class DocumentController {
   @UseInterceptors(FileInterceptor('file'))
   async analyzeDocument(@UploadedFile() file: Express.Multer.File) {
     try {
-      console.log(file);
       const text = await this.textExtractionService.extractText(file.path);
-      const query = `Summarize the following text: ${text}`;
-      const response = await this.openaiService.query(query);
+      // console.log(text);
+      const query = `Show me the most relevant information from the following text: ${text}`;
+      const response = await this.geminiService.query(query);
       return { text, response };
     } catch (err) {
       console.error('Error analyzing document:', err);

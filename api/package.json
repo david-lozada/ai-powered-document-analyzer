@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@fastify/multipart": "6.0.0",
+    "@google/generative-ai": "^0.24.1",
     "@nestjs-modules/ioredis": "2.0.2",
     "@nestjs/common": "11.0.1",
     "@nestjs/config": "4.0.2",
@@ -32,7 +33,6 @@
     "dotenv": "^16.5.0",
     "ioredis": "5.6.1",
     "multer": "2.0.1",
-    "openai": "5.2.0",
     "pdf-parse": "1.1.1",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.1"
