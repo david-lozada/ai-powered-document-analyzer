@@ -11,12 +11,13 @@ export class DocumentService {
   ) {}
   async analyzeDocument(file: Express.Multer.File, dto: DocumentDto) {
     try {
-      if (!file.path) {
-        throw new Error('File path is missing. Multer did not save the file.');
-      }
-      const text: string = await this.textExtractionService.extractText(
-        file.path,
-      );
+      let text: string = '';
+      if (file.path)
+        text = await this.textExtractionService.extractText(file.path);
+      if (!file.buffer)
+        text = await this.textExtractionService.extractTextFromBuffer(
+          file.buffer,
+        );
       const query = `${dto.description}: ${text}`;
       return await this.geminiService.query(query);
     } catch (err) {

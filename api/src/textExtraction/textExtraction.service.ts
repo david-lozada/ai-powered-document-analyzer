@@ -43,4 +43,9 @@ export class TextExtractionService {
       }
     }
   }
+
+  async extractTextFromBuffer(buffer: Buffer): Promise<string> {
+    const { text } = await pdfParse(buffer);
+    return text || 'No text extracted';
+  }
 }
