@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TextExtractionService } from './textExtraction/textExtraction.service';
-import { GeminiService } from './gemini/gemini.service';
 import { GeminiModule } from './gemini/gemini.module';
-import { DocumentController } from './document/document.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { CacheModule } from '@nestjs/cache-manager';
+import { DocumentModule } from './document/document.module';
+import { diskStorage } from 'multer';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -14,13 +14,21 @@ import { CacheModule } from '@nestjs/cache-manager';
     }),
     CacheModule.register({
       isGlobal: true,
+      ttl: 30 * 1000,
     }),
     MulterModule.register({
-      dest: './uploads',
+      storage: diskStorage({
+        destination: join(__dirname, '..', 'uploads'), // Absolute path
+        filename: (req, file, cb) => {
+          const uniqueName = file.originalname;
+          cb(null, uniqueName);
+        },
+      }),
     }),
     GeminiModule,
+    DocumentModule,
   ],
-  controllers: [DocumentController],
-  providers: [TextExtractionService, GeminiService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

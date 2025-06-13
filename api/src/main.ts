@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-declare const module: any;
+declare const module: {
+  hot: { accept: () => void; dispose: (callback: () => void) => void };
+};
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,7 +17,11 @@ async function bootstrap() {
 
   if (module.hot) {
     module.hot.accept();
-    module.hot.dispose(() => app.close());
+    module.hot.dispose(() => {
+      app.close().catch((err) => {
+        console.error('Error during app close:', err);
+      });
+    });
   }
 }
 bootstrap();
