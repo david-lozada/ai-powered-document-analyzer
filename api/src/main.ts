@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import 'reflect-metadata';
 declare const module: {
   hot: { accept: () => void; dispose: (callback: () => void) => void };
 };

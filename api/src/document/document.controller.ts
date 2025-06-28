@@ -29,25 +29,11 @@ export class DocumentController {
     if (!file) {
       throw new Error('File upload failed. Please ensure a file is provided.');
     }
-    console.log('Multer file object:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      path: file.path, // Check if this is populated
-      buffer: file.buffer, // Check if file is in memory
-    });
     // Additional validation
     const allowedMimeTypes = ['application/pdf'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new Error('Invalid file type. Only PDF files are allowed.');
     }
     return this.documentService.analyzeDocument(file, dto);
-  }
-
-  @Post('test-upload')
-  @UseInterceptors(FileInterceptor('file'))
-  testUpload(@UploadedFile() file: Express.Multer.File) {
-    console.log('Uploaded file:', file);
-    return { message: 'File uploaded successfully', file };
   }
 }

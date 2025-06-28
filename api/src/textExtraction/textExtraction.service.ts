@@ -1,18 +1,13 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { Cache } from 'cache-manager';
+import { Injectable } from '@nestjs/common';
 import fs from 'node:fs';
 import pdfParse from 'pdf-parse';
 
 @Injectable()
 export class TextExtractionService {
-  constructor(@Inject('CACHE_MANAGER') private cacheManager: Cache) {}
+  constructor() {}
 
   async extractText(filePath: string): Promise<string> {
     try {
-      const cacheKey = `extracted-text-${filePath}`;
-      const cachedText = await this.cacheManager.get<string>(cacheKey);
-      if (cachedText) return cachedText;
-
       // Check if the file exists
       if (!fs.existsSync(filePath))
         throw new Error(`File not found at path: ${filePath}`);
@@ -27,9 +22,6 @@ export class TextExtractionService {
       const { text } = await pdfParse(fileBuffer);
       if (!text || text.trim() === '')
         throw new Error('Text extraction failed or no text found in the PDF');
-
-      // Save in cache
-      await this.cacheManager.set(cacheKey, text);
 
       // Return the extracted text
       return text || 'Document is empty or text could not be extracted';

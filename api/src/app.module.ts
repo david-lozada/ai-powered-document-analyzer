@@ -6,11 +6,18 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { DocumentModule } from './document/document.module';
 import { diskStorage } from 'multer';
 import { join } from 'path';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import * as process from 'node:process';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.DB_URL,
+      entities: [],
     }),
     CacheModule.register({
       isGlobal: true,
