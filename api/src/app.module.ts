@@ -7,7 +7,10 @@ import { DocumentModule } from './document/document.module';
 import { diskStorage } from 'multer';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import * as process from 'node:process';
+import { DatabaseModule } from './database/database.module';
+import { TextExtractionModule } from './text-extraction/text-extraction.module';
+import { SupabaseService } from './supabase/supabase.service';
+// import * as process from 'node:process';
 
 @Module({
   imports: [
@@ -16,8 +19,16 @@ import * as process from 'node:process';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DB_URL,
-      entities: [],
+      host: 'aws-0-us-east-2.pooler.supabase.com',
+      port: 6543,
+      username: 'postgres.fqplprbnavdtnicyeiie',
+      password: 'Salma*0206', // Plain string (no URL encoding needed here)
+      database: 'postgres',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'], // Auto-load entities
+      ssl: true,
+      extra: {
+        ssl: { rejectUnauthorized: false },
+      },
     }),
     CacheModule.register({
       isGlobal: true,
@@ -34,8 +45,10 @@ import * as process from 'node:process';
     }),
     GeminiModule,
     DocumentModule,
+    DatabaseModule,
+    TextExtractionModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [SupabaseService],
 })
 export class AppModule {}

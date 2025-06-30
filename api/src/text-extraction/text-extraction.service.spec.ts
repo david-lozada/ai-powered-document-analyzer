@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TextExtractionService } from './textExtraction.service';
+import { TextExtractionService } from './text-extraction.service';
 
 describe('TextExtractionService', () => {
   let service: TextExtractionService;
