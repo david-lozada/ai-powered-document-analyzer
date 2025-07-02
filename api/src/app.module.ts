@@ -8,9 +8,8 @@ import { diskStorage } from 'multer';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
-import { TextExtractionModule } from './text-extraction/text-extraction.module';
-import { SupabaseService } from './supabase/supabase.service';
-// import * as process from 'node:process';
+import { TextChunkerModule } from './text-chunker/text-chunker.module';
+import * as process from 'node:process';
 
 @Module({
   imports: [
@@ -19,16 +18,17 @@ import { SupabaseService } from './supabase/supabase.service';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'aws-0-us-east-2.pooler.supabase.com',
-      port: 6543,
-      username: 'postgres.fqplprbnavdtnicyeiie',
-      password: 'Salma*0206', // Plain string (no URL encoding needed here)
+      host: process.env.DB_HOST || undefined,
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD, // Plain string (no URL encoding needed here)
       database: 'postgres',
       entities: [__dirname + '/**/*.entity{.ts,.js}'], // Auto-load entities
       ssl: true,
       extra: {
         ssl: { rejectUnauthorized: false },
       },
+      synchronize: true,
     }),
     CacheModule.register({
       isGlobal: true,
@@ -46,9 +46,9 @@ import { SupabaseService } from './supabase/supabase.service';
     GeminiModule,
     DocumentModule,
     DatabaseModule,
-    TextExtractionModule,
+    TextChunkerModule,
   ],
   controllers: [],
-  providers: [SupabaseService],
+  providers: [],
 })
 export class AppModule {}

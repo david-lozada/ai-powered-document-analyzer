@@ -6,7 +6,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { DocumentDto } from './document.dto';
+// import { DocumentDto } from './document.dto';
 import { DocumentService } from './document.service';
 
 @Controller('document')
@@ -17,15 +17,11 @@ export class DocumentController {
    * Endpoint to analyze a document.
    * It uses Tesseract to recognize text from the uploaded file and Gemini to summarize it.
    * @param file The uploaded file containing the document.
-   * @param dto
    * @returns The recognized text and the summary response from Gemini.
    */
-  @Post('analyze')
+  @Post('process')
   @UseInterceptors(FileInterceptor('file'))
-  analyzeDocument(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: DocumentDto,
-  ) {
+  analyzeDocument(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new Error('File upload failed. Please ensure a file is provided.');
     }
@@ -34,6 +30,7 @@ export class DocumentController {
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new Error('Invalid file type. Only PDF files are allowed.');
     }
-    return this.documentService.analyzeDocument(file, dto);
+    console.log('Passed');
+    return this.documentService.processDocument(file);
   }
 }

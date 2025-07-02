@@ -1,54 +1,45 @@
-import {
-  GenerateContentRequest,
-  GenerateContentResponse,
-  GenerateContentResult,
-  GenerativeModel,
-  GoogleGenerativeAI,
-} from '@google/generative-ai';
+// gemini.service.ts
 import { Injectable } from '@nestjs/common';
+import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 
-@Injectable()
+@Injectable() // Don't forget this decorator
 export class GeminiService {
-  private readonly googleAI: GoogleGenerativeAI;
-  private readonly model: GenerativeModel;
+  private readonly googleAI: GoogleGenerativeAI; // <-- Declare the property
+  private readonly embeddingModel: GenerativeModel;
+  private readonly chatModel: GenerativeModel;
+
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('AI_API_KEY');
-    const modelType = this.configService.get<string>('AI_MODEL');
+    const modelType =
+      this.configService.get<string>('AI_MODEL') || 'gemini-1.5-pro';
 
-    if (!apiKey || !modelType) {
-      throw new Error(
-        'AI_API_KEY or AI_MODEL is not set in the environment variables.',
-      );
+    if (!apiKey) {
+      throw new Error('AI_API_KEY is not defined in the environment');
     }
+    this.googleAI = new GoogleGenerativeAI(apiKey); // Now properly assigned
 
-    this.googleAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.googleAI.getGenerativeModel({
+    this.chatModel = this.googleAI.getGenerativeModel({
       model: modelType,
+    });
+
+    this.embeddingModel = this.googleAI.getGenerativeModel({
+      model: 'embedding-001',
     });
   }
 
-  async query(text: string): Promise<string | null> {
+  async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const request: GenerateContentRequest = {
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text }],
-          },
-        ],
-      };
-
-      const response: GenerateContentResult =
-        await this.model.generateContent(request);
-      const content: string =
-        response.response?.candidates?.[0]?.content?.parts?.[0]?.text ??
-        'No response from AI';
-
-      return content;
+      const result = await this.embeddingModel.embedContent(text);
+      return result.embedding.values;
     } catch (error) {
-      console.error('Error querying AI:', error);
-      throw error;
+      console.error('Embedding generation error:', error);
+      throw new Error('Failed to generate embedding');
     }
+  }
+
+  async query(text: string): Promise<string> {
+    const result = await this.chatModel.generateContent(text);
+    return result.response.text();
   }
 }

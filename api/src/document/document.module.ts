@@ -3,16 +3,16 @@ import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { documentProviders } from './document.providers';
-import { DatabaseModule } from '../database/database.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Document } from './document.entity';
-import { TextExtractionModule } from '../text-extraction/text-extraction.module';
+import { DocumentChunks } from './document-chunks.entity';
+import { TextChunkerModule } from '../text-chunker/text-chunker.module';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [
     DatabaseModule,
-    TypeOrmModule.forFeature([Document]),
-    TextExtractionModule,
+    TypeOrmModule.forFeature([DocumentChunks]),
+    TextChunkerModule,
   ],
   controllers: [DocumentController],
   providers: [DocumentService, GeminiService, ...documentProviders],
