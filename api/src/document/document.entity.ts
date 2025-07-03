@@ -17,7 +17,7 @@ export class Document {
   description: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  uploadedAt: Date;
+  uploaded_at: Date;
 
   @OneToMany(() => DocumentChunks, (chunk) => chunk.document)
   chunks: Awaited<DocumentChunks>[];
