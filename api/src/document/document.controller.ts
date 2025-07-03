@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -8,14 +10,15 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 // import { DocumentDto } from './document.dto';
 import { DocumentService } from './document.service';
+import { SearchDocumentDto } from './search-document.dto';
 
 @Controller('document')
 export class DocumentController {
   constructor(private documentService: DocumentService) {}
 
   /**
-   * Endpoint to analyze a document.
-   * It uses Tesseract to recognize text from the uploaded file and Gemini to summarize it.
+   * Endpoint to process a document.
+   * It calls processDocument method.
    * @param file The uploaded file containing the document.
    * @returns The recognized text and the summary response from Gemini.
    */
@@ -32,5 +35,37 @@ export class DocumentController {
     }
     console.log('Passed');
     return this.documentService.processDocument(file);
+  }
+
+  @Post('search/:documentId')
+  async searchDocuments(
+    @Body() bodyDto: SearchDocumentDto,
+    @Param('documentId') documentId: number,
+  ) {
+    const searchDto = { ...bodyDto, documentId };
+    console.log('searchDto:', searchDto);
+    if (!searchDto.query || !searchDto.documentId) {
+      throw new BadRequestException('Search query and document are required');
+    }
+    return this.documentService.semanticSearch(
+      searchDto.query,
+      searchDto.documentId,
+    );
+  }
+
+  @Post('analyze/:documentId')
+  async analyzeDocuments(
+    @Body() bodyDto: SearchDocumentDto,
+    @Param('documentId') documentId: number,
+  ) {
+    const searchDto = { ...bodyDto, documentId };
+    console.log('searchDto:', searchDto);
+    if (!searchDto.query || !searchDto.documentId) {
+      throw new BadRequestException('Search query and document are required');
+    }
+    return this.documentService.analyzeAllChunks(
+      searchDto.query,
+      searchDto.documentId,
+    );
   }
 }

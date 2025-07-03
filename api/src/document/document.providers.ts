@@ -1,11 +1,11 @@
 import { DataSource } from 'typeorm';
-import { DocumentChunks } from './document-chunks.entity';
+import { Document } from './document.entity';
 
 export const documentProviders = [
   {
-    provide: 'DOCUMENT_CHUNKS_REPOSITORY',
+    provide: 'DOCUMENT_REPOSITORY',
     useFactory: (dataSource: DataSource) =>
-      dataSource.getRepository(DocumentChunks),
+      dataSource.getRepository(Document),
     inject: ['DATA_SOURCE'],
   },
 ];

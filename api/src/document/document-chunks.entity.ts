@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+// document-chunks.entity.ts
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Document } from './document.entity';
 
 @Entity()
 export class DocumentChunks {
@@ -8,9 +16,15 @@ export class DocumentChunks {
   @Column('text')
   content: string;
 
-  @Column('simple-array') // Use 'simple-array' if pgvector is not available
-  embedding: number[];
+  @Column('float', { array: true }) // Use float array instead of 'vector'
+  embedding: string;
 
   @Column('integer')
   page_number: number;
+
+  @ManyToOne(() => Document, (document) => document.chunks, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'document_id' })
+  document: Awaited<Document>;
 }

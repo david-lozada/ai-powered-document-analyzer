@@ -28,7 +28,6 @@ import * as process from 'node:process';
       extra: {
         ssl: { rejectUnauthorized: false },
       },
-      synchronize: true,
     }),
     CacheModule.register({
       isGlobal: true,
