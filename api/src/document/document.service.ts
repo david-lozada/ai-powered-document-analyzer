@@ -60,36 +60,43 @@ export class DocumentService {
     query: string,
     documentId: number,
     topK: number = 5,
-  ): Promise<SearchResult[]> {
+  ): Promise<SearchResult[] | void> {
     try {
+      // check for cached results first
+      const cacheKey = `query-${query}`;
+      const cachedResponse =
+        await this.cacheManager.get<SearchResult[]>(cacheKey);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
       // 1. Generate embedding for the search query
       const queryEmbedding = toPgvectorString(
         await this.generateEmbedding(query),
       );
-      // console.log('queryEmbedding', queryEmbedding);
       // 2. Perform vector similarity search in the database
       const results = this.documentChunksRepository
-        .createQueryBuilder('chunk')
-        .select(['chunk.id', 'chunk.content', 'chunk.page_number'])
-        .addSelect('chunk.embedding <=> :embedding', 'similarity')
+        .createQueryBuilder()
+        .select(['id', 'content', 'page_number'])
+        .addSelect('embedding <=> :embedding', 'similarity')
         .setParameter('embedding', queryEmbedding)
-        .orderBy('similarity', 'ASC') // Lower is more similar in pgvector
+        .orderBy('similarity', 'ASC')
         .limit(topK);
-      // console.log('results', results);
 
       if (documentId) {
-        results.where('chunk.document_id = :documentId', { documentId });
+        results.where('document_id = :documentId', { documentId });
       }
 
       const rawResults: RawResult[] = await results.getRawMany();
-
       // 3. Format and return results
-      return rawResults.map((result) => ({
-        id: result.chunk_id,
-        content: result.chunk_content,
-        page_number: result.chunk_page_number,
+      const customRawResults: RawResult[] = rawResults.map((result) => ({
+        id: result.id,
+        content: result.content,
+        page_number: result.page_number,
         similarity: result.similarity,
       }));
+      // cache the results
+      await this.cacheManager.set<RawResult[]>(cacheKey, customRawResults);
+      return customRawResults;
     } catch (error) {
       console.error('Error performing semantic search:', error);
       throw new Error('Failed to perform semantic search');
@@ -103,6 +110,12 @@ export class DocumentService {
    * @param documentId - The ID of the actual document to analyze
    */
   async analyzeAllChunks(query: string, documentId: number): Promise<string> {
+    // check for cached results first
+    const cacheKey = `ai-response-${documentId}`;
+    const cachedText = await this.cacheManager.get<string>(cacheKey);
+    if (cachedText) {
+      return cachedText;
+    }
     // 1. Fetch all chunks for the document
     const chunks = await this.documentChunksRepository.find({
       where: { document: { id: documentId } },
@@ -114,8 +127,12 @@ export class DocumentService {
 
     // 3. Combine user query with the full text
     const prompt = `${query}: ${fullText}`;
-
+    const aiResponse = await this.geminiService.query(prompt);
+    // cache the response
+    await this.cacheManager.set<string>(cacheKey, aiResponse);
     // 4. Send to AI service
-    return this.geminiService.query(prompt);
+    return aiResponse;
   }
+
+  //   TODO: Tests
 }
