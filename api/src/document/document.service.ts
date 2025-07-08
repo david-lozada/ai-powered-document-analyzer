@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 // import { DocumentDto } from './document.dto';
@@ -12,6 +12,7 @@ import { RawResult, SearchResult } from './document.types';
 
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name);
   constructor(
     @Inject('CACHE_MANAGER') private cacheManager: Cache,
     private readonly chunker: TextChunker,
@@ -28,10 +29,9 @@ export class DocumentService {
   /**
    * Save document, extract text chunks, generate embeddings, and save them.
    * @param {file} file - The file to analyze
-   * @param {object} dto - The dto given by the user in this case only a description.
    * @returns {string} - The response given by the AI
    */
-  async processDocument(file: Express.Multer.File): Promise<DocumentChunks[]> {
+  async processDocument(file: Express.Multer.File): Promise<Document> {
     // 1. Create the parent document record first
     // console.log('Processing document:', file);
     const document = await this.documentRepository.save({
@@ -53,9 +53,17 @@ export class DocumentService {
     );
 
     // 3. Save chunks with document reference
-    return await this.documentChunksRepository.save(embeddings);
+    await this.documentChunksRepository.save(embeddings);
+    return document;
   }
 
+  /**
+   * Perform semantic search on document chunks using vector similarity.
+   * @param query - The search query to find relevant chunks
+   * @param documentId - Optional document ID to filter results
+   * @param topK - Number of top results to return
+   * @returns {Promise<SearchResult[]>} - Array of search results
+   */
   async semanticSearch(
     query: string,
     documentId: number,
@@ -134,5 +142,35 @@ export class DocumentService {
     return aiResponse;
   }
 
-  //   TODO: Tests
+  /**
+   * Retrieves all documents sorted by upload date (newest first)
+   * @returns Promise<Document[]> Array of documents
+   * @throws Error if database operation fails
+   */
+  async getAllDocuments(skip = 0, take = 10): Promise<Document[]> {
+    try {
+      return await this.documentRepository.find({
+        select: ['id', 'original_name', 'uploaded_at'],
+        order: { uploaded_at: 'DESC' },
+        skip,
+        take,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Failed to fetch documents: ${error.message}`,
+          error.stack,
+        );
+        throw new Error(
+          'Failed to retrieve documents. Please try again later.',
+        );
+      }
+      // Handle non-Error thrown values
+      this.logger.error(
+        'Failed to fetch documents due to unexpected error type',
+        error,
+      );
+      throw new Error('An unknown error occurred');
+    }
+  }
 }

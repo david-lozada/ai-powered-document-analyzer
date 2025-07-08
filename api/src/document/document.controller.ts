@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Param,
   Post,
   UploadedFile,
@@ -33,7 +34,6 @@ export class DocumentController {
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new Error('Invalid file type. Only PDF files are allowed.');
     }
-    console.log('Passed');
     return this.documentService.processDocument(file);
   }
 
@@ -67,5 +67,13 @@ export class DocumentController {
       searchDto.query,
       searchDto.documentId,
     );
+  }
+
+  @Get('documents/:skip/:take')
+  async getAllDocuments(
+    @Param('skip') skip: number,
+    @Param('take') take: number,
+  ) {
+    return this.documentService.getAllDocuments(skip, take);
   }
 }
