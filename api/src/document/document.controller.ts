@@ -37,13 +37,12 @@ export class DocumentController {
     return this.documentService.processDocument(file);
   }
 
-  @Post('search/:documentId')
+  @Post('/:documentId/search') //TODO: omit cache when new param is given
   async searchDocuments(
     @Body() bodyDto: SearchDocumentDto,
     @Param('documentId') documentId: number,
   ) {
     const searchDto = { ...bodyDto, documentId };
-    console.log('searchDto:', searchDto);
     if (!searchDto.query || !searchDto.documentId) {
       throw new BadRequestException('Search query and document are required');
     }
@@ -53,13 +52,12 @@ export class DocumentController {
     );
   }
 
-  @Post('analyze/:documentId')
+  @Post('/:documentId/analyze') //TODO: omit cache when new param is given
   async analyzeDocuments(
     @Body() bodyDto: SearchDocumentDto,
     @Param('documentId') documentId: number,
   ) {
     const searchDto = { ...bodyDto, documentId };
-    console.log('searchDto:', searchDto);
     if (!searchDto.query || !searchDto.documentId) {
       throw new BadRequestException('Search query and document are required');
     }
@@ -75,5 +73,12 @@ export class DocumentController {
     @Param('take') take: number,
   ) {
     return this.documentService.getAllDocuments(skip, take);
+  }
+  @Get('/:documentId')
+  async getDocumentById(@Param('documentId') documentId: number) {
+    if (!documentId) {
+      throw new BadRequestException('Document ID is required');
+    }
+    return this.documentService.getDocumentById(documentId);
   }
 }

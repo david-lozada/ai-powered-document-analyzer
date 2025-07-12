@@ -173,4 +173,27 @@ export class DocumentService {
       throw new Error('An unknown error occurred');
     }
   }
+
+  async getDocumentById(id: number): Promise<Document | null> {
+    try {
+      return await this.documentRepository.findOne({
+        where: { id },
+        select: ['id', 'original_name', 'uploaded_at'],
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Failed to fetch document with ID ${id}: ${error.message}`,
+          error.stack,
+        );
+        throw new Error('Failed to retrieve document. Please try again later.');
+      }
+      // Handle non-Error thrown values
+      this.logger.error(
+        `Failed to fetch document with ID ${id} due to unexpected error type`,
+        error,
+      );
+      throw new Error('An unknown error occurred');
+    }
+  }
 }

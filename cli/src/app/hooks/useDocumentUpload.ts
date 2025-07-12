@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { UseDocumentUploadOptions, UseDocumentUploadResult } from "@/app/types/document";
+import { UseDocumentUploadOptions, UseDocumentUploadResult } from "@/app/types/document.types";
 import {useRouter} from "next/navigation";
 
 function useDocumentUpload(options: UseDocumentUploadOptions): UseDocumentUploadResult {

@@ -17,3 +17,21 @@ export type UseDocumentUploadResult = {
     uploading: boolean;
     error: Error | null;
 };
+
+export type DocumentId = number
+
+export interface SemanticSearch {
+    documentId: DocumentId
+    query: string
+}
+
+export interface SemanticSearchResult {
+    id: number;
+    content: string;
+    page_number: number;
+    similarity: number;
+  }
+
+export type SemanticSearchError = { data: null; error: Error; isLoading: boolean };
+
+export type SemanticSearchResponse = SemanticSearchResult[] | SemanticSearchError;
