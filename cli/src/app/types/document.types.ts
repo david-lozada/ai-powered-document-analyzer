@@ -1,3 +1,13 @@
+/* export interface UseFormReturn {
+    handleSubmit: (event: React.FormEvent) => Promise<void>;
+    askAiRef: React.RefObject<HTMLInputElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    isSubmitting: boolean;
+    error: string | null;
+    searchResponse: SemanticSearchResult[] | null;
+    analysisResponse: string | null;
+  } */
+
 export  interface Document {
     id: number;
     original_name: string;
@@ -20,7 +30,7 @@ export type UseDocumentUploadResult = {
 
 export type DocumentId = number
 
-export interface SemanticSearch {
+export interface SearchProps {
     documentId: DocumentId
     query: string
 }

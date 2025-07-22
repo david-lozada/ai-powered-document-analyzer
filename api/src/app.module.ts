@@ -31,7 +31,7 @@ import * as process from 'node:process';
     }),
     CacheModule.register({
       isGlobal: true,
-      ttl: 30 * 1000,
+      ttl: 10 * 1000,
     }),
     MulterModule.register({
       storage: diskStorage({
