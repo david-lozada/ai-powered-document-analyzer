@@ -104,14 +104,7 @@ The application follows a modern **RAG (Retrieval-Augmented Generation)** archit
       AI_MODEL=gemini-1.5-pro
       ```
 
-4.  **Start the Database**:
-    From the root directory:
-
-    ```bash
-    docker-compose up -d
-    ```
-
-5.  **Run the Application**:
+4.  **Run the Application**:
     - **Backend (API)**:
       ```bash
       cd api
@@ -123,7 +116,7 @@ The application follows a modern **RAG (Retrieval-Augmented Generation)** archit
       pnpm dev
       ```
 
-6.  **Access the App**:
+5.  **Access the App**:
     Open [http://localhost:3001](http://localhost:3001) in your browser. (Note: Port may vary based on your Next.js config, default is usually 3000 or 3001 if API is on 3000).
 
 ## 📚 API Endpoints
