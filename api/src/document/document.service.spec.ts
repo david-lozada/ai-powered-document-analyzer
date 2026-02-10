@@ -62,7 +62,7 @@ describe('DocumentService', () => {
       expect(result).toBe('ai-response');
       expect(geminiService.query).toHaveBeenCalledWith('query: chunk1\nchunk2');
       expect(cacheManager.set).toHaveBeenCalledWith(
-        'ai-response-1',
+        'ai-response-1-query',
         'ai-response',
       );
     });
@@ -87,7 +87,7 @@ describe('DocumentService', () => {
         setParameter: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawMany: jest
           .fn()
           .mockResolvedValue([
@@ -101,7 +101,7 @@ describe('DocumentService', () => {
       const result = await service.semanticSearch('query', 1);
       expect(geminiService.generateEmbedding).toHaveBeenCalledWith('query');
       expect(documentChunksRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(cacheManager.set).toHaveBeenCalledWith('query-query', [
+      expect(cacheManager.set).toHaveBeenCalledWith('query-1-query', [
         { id: 1, content: 'foo', page_number: 1, similarity: 0.1 },
       ]);
       expect(result).toEqual([

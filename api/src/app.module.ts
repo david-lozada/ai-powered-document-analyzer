@@ -22,12 +22,15 @@ import * as process from 'node:process';
       port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD, // Plain string (no URL encoding needed here)
-      database: 'postgres',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'], // Auto-load entities
-      ssl: true,
-      extra: {
-        ssl: { rejectUnauthorized: false },
-      },
+      database: process.env.DB_NAME || 'postgres',
+      autoLoadEntities: true,
+      ssl: process.env.DB_SSL === 'true',
+      extra:
+        process.env.DB_SSL === 'true'
+          ? {
+              ssl: { rejectUnauthorized: false },
+            }
+          : {},
     }),
     CacheModule.register({
       isGlobal: true,

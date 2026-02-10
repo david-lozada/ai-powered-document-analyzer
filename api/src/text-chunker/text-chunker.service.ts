@@ -25,18 +25,47 @@ export class TextChunker {
     pdfBuffer: Buffer,
   ): Promise<{ text: string; page: number }[]> {
     const chunks: { text: string; page: number }[] = [];
-    // Load your PDFDocument
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const numberOfPages = pdfDoc.getPages().length;
+    const pageMap = new Map<number, string>();
 
-    for (let i = 0; i < numberOfPages; i++) {
-      const subDocument = await PDFDocument.create();
-      const [copiedPage] = await subDocument.copyPages(pdfDoc, [i]);
-      subDocument.addPage(copiedPage);
-      const pdfBytes = await subDocument.save();
-      const { text } = await pdfParse(Buffer.from(pdfBytes));
+    const render_page = async (pageData: any) => {
+      // Parse text from the page
+      const render_options = {
+        // Replaces all occurrences of whitespace with standard spaces (0x20).
+        normalizeWhitespace: true,
+        // do not attempt to combine same line TextItem's.
+        disableCombineTextItems: false,
+      };
 
-      chunks.push(...this.splitIntoSemanticChunks(text, i + 1));
+      const textContent = await pageData.getTextContent(render_options);
+
+      let lastY,
+        text = '';
+      for (const item of textContent.items) {
+        if (!lastY || item.transform[5] === lastY) {
+          text += ' ' + item.str;
+        } else {
+          text += '\n' + item.str;
+        }
+        lastY = item.transform[5];
+      }
+
+      // Store per page (pageIndex is 0-based)
+      pageMap.set(pageData.pageIndex + 1, text);
+
+      return text;
+    };
+
+    const options = {
+      pagerender: render_page,
+    };
+
+    await pdfParse(pdfBuffer, options);
+
+    // Convert map to chunks, sorting by page number
+    const sortedPages = Array.from(pageMap.keys()).sort((a, b) => a - b);
+    for (const page of sortedPages) {
+      const text = pageMap.get(page) || '';
+      chunks.push(...this.splitIntoSemanticChunks(text, page));
     }
 
     return chunks;
@@ -48,21 +77,44 @@ export class TextChunker {
     return this.splitIntoSemanticChunks(text, 1);
   }
 
+  private cleanText(text: string): string {
+    // 1. Unite separated single letters "H e l l o" -> "Hello"
+    // Heuristic: sequence of single letters separated by spaces.
+    let cleaned = text
+      .replace(/(?:\s|^)([a-zA-Z])(?=\s[a-zA-Z](?:\s|$))/g, '$1')
+      .replace(/([a-zA-Z])\s([a-zA-Z])(?=\s)/g, '$1$2'); // merging pass
+
+    // 2. Normalize whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    return cleaned;
+  }
+
   private splitIntoSemanticChunks(
     text: string,
     page: number,
     chunkSize = 1000,
   ): { text: string; page: number }[] {
-    const sentences = this.wordTokenizer.tokenize(text);
+    // Clean text first
+    const cleanedText = this.cleanText(text);
+
+    // Split by sentence delimiters (keep delimiter).
+    // This is a simple regex for sentence splitting.
+    const sentences = cleanedText.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [
+      cleanedText,
+    ];
+
     const chunks: { text: string; page: number }[] = [];
     let currentChunk = '';
 
     for (const sentence of sentences) {
-      if (currentChunk.length + sentence.length > chunkSize) {
+      if (
+        currentChunk.length + sentence.length > chunkSize &&
+        currentChunk.length > 0
+      ) {
         chunks.push({ text: currentChunk.trim(), page });
         currentChunk = '';
       }
-      currentChunk += `${sentence} `;
+      currentChunk += sentence;
     }
 
     if (currentChunk.trim()) {

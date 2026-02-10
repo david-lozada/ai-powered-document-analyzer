@@ -16,7 +16,7 @@ export class DocumentChunks {
   @Column('text')
   content: string;
 
-  @Column('float', { array: true }) // Use float array instead of 'vector'
+  @Column({ type: 'text' })
   embedding: string;
 
   @Column('integer')

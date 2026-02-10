@@ -26,9 +26,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background selection:bg-primary/20`}
       >
-          <main>{children}</main>
+        <div className="relative min-h-screen">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
+          <main className="relative container mx-auto px-4 py-12 md:px-6 lg:px-8">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

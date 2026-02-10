@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -80,5 +81,13 @@ export class DocumentController {
       throw new BadRequestException('Document ID is required');
     }
     return this.documentService.getDocumentById(documentId);
+  }
+
+  @Delete('/:documentId')
+  async deleteDocument(@Param('documentId') documentId: number) {
+    if (!documentId) {
+      throw new BadRequestException('Document ID is required');
+    }
+    return this.documentService.deleteDocument(documentId);
   }
 }

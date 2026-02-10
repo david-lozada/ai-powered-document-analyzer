@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 // import { DocumentDto } from './document.dto';
@@ -41,20 +47,36 @@ export class DocumentService {
     });
 
     // 2. Process chunks as before but now with document reference
-    const textChunks = await this.chunker.extractTextChunks(file);
+    try {
+      const textChunks = await this.chunker.extractTextChunks(file);
 
-    const embeddings = await Promise.all(
-      textChunks.map(async (chunk) => ({
-        content: chunk.text,
-        embedding: toPgvectorString(await this.generateEmbedding(chunk.text)),
-        page_number: chunk.page,
-        document: { id: document.id }, // Reference the parent document
-      })),
-    );
+      // Process chunks in batches to avoid hitting rate limits
+      const batchSize = 5;
+      const embeddings: any[] = [];
+      for (let i = 0; i < textChunks.length; i += batchSize) {
+        const batch = textChunks.slice(i, i + batchSize);
+        const batchEmbeddings = await Promise.all(
+          batch.map(async (chunk) => ({
+            content: chunk.text,
+            embedding: toPgvectorString(
+              await this.generateEmbedding(chunk.text),
+            ),
+            page_number: chunk.page,
+            document: { id: document.id }, // Reference the parent document
+          })),
+        );
+        embeddings.push(...batchEmbeddings);
+      }
 
-    // 3. Save chunks with document reference
-    await this.documentChunksRepository.save(embeddings);
-    return document;
+      // 3. Save chunks with document reference
+      await this.documentChunksRepository.save(embeddings);
+      return document;
+    } catch (error) {
+      this.logger.error('Error processing document:', error);
+      // Clean up the document if processing fails
+      await this.documentRepository.delete(document.id);
+      throw error;
+    }
   }
 
   /**
@@ -71,7 +93,7 @@ export class DocumentService {
   ): Promise<SearchResult[] | void> {
     try {
       // check for cached results first
-      const cacheKey = `query-${query}`;
+      const cacheKey = `query-${documentId}-${query}`;
       const cachedResponse =
         await this.cacheManager.get<SearchResult[]>(cacheKey);
       if (cachedResponse) {
@@ -83,15 +105,17 @@ export class DocumentService {
       );
       // 2. Perform vector similarity search in the database
       const results = this.documentChunksRepository
-        .createQueryBuilder()
-        .select(['id', 'content', 'page_number'])
-        .addSelect('embedding <=> :embedding', 'similarity')
+        .createQueryBuilder('chunk')
+        .select('chunk.id', 'id')
+        .addSelect('chunk.content', 'content')
+        .addSelect('chunk.page_number', 'page_number')
+        .addSelect('1 - (chunk.embedding <=> :embedding)', 'similarity')
         .setParameter('embedding', queryEmbedding)
-        .orderBy('similarity', 'ASC')
+        .orderBy('chunk.embedding <=> :embedding', 'ASC')
         .limit(topK);
 
       if (documentId) {
-        results.where('document_id = :documentId', { documentId });
+        results.andWhere('chunk.document_id = :documentId', { documentId });
       }
 
       const rawResults: RawResult[] = await results.getRawMany();
@@ -119,7 +143,7 @@ export class DocumentService {
    */
   async analyzeAllChunks(query: string, documentId: number): Promise<string> {
     // check for cached results first
-    const cacheKey = `ai-response-${documentId}`;
+    const cacheKey = `ai-response-${documentId}-${query}`;
     const cachedText = await this.cacheManager.get<string>(cacheKey);
     if (cachedText) {
       return cachedText;
@@ -135,11 +159,25 @@ export class DocumentService {
 
     // 3. Combine user query with the full text
     const prompt = `${query}: ${fullText}`;
-    const aiResponse = await this.geminiService.query(prompt);
-    // cache the response
-    await this.cacheManager.set<string>(cacheKey, aiResponse);
-    // 4. Send to AI service
-    return aiResponse;
+    try {
+      const aiResponse = await this.geminiService.query(prompt);
+      // cache the response
+      await this.cacheManager.set<string>(cacheKey, aiResponse);
+      // 4. Send to AI service
+      return aiResponse;
+    } catch (error: any) {
+      if (
+        error.status === 429 ||
+        error.statusText === 'Too Many Requests' ||
+        error.message?.includes('429')
+      ) {
+        throw new HttpException(
+          'AI Service is currently busy. Retrying automatically...',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -194,6 +232,22 @@ export class DocumentService {
         error,
       );
       throw new Error('An unknown error occurred');
+    }
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    try {
+      // 1. Delete the document (cascade will handle chunks)
+      await this.documentRepository.delete(id);
+
+      // 2. Clear related cache (optional but good practice)
+      // Since we don't have a list of all query keys, we can't clear all query results
+      // but we can clear the analysis response if we knew the query.
+      // For now, simple deletion is enough as we are using documentId in keys.
+      this.logger.log(`Document with ID ${id} deleted`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to delete document ${id}`, error);
+      throw new Error('Failed to delete document');
     }
   }
 }
