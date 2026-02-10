@@ -160,6 +160,7 @@ export default async function DocumentsList() {
       </div>
     );
   } catch (error) {
+    console.error("Failed to fetch documents:", error);
     return (
       <div className="p-8 rounded-2xl border border-destructive/20 bg-destructive/5 text-destructive space-y-3">
         <div className="flex items-center gap-3">
@@ -183,7 +184,7 @@ export default async function DocumentsList() {
           <div>
             <p className="font-bold">Sync Failed</p>
             <p className="text-sm opacity-80">
-              We couldn't reach the document library.
+              We couldn&apos;t reach the document library.
             </p>
           </div>
         </div>
