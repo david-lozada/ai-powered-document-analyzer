@@ -12,7 +12,7 @@ export default function DocumentUploadPage({
 }) {
   const resolvedParams = React.use(params);
   const documentId = resolvedParams.id;
-  const { data, error, isLoading } = useDocument({ documentId });
+  const { data, isLoading } = useDocument({ documentId });
   const {
     handleSubmit,
     askAiRef,
@@ -35,44 +35,6 @@ export default function DocumentUploadPage({
         <p className="text-muted-foreground font-bold tracking-widest text-xs uppercase animate-pulse">
           Retrieving Intelligence...
         </p>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 animate-in fade-in duration-700">
-        <div className="w-24 h-24 rounded-3xl bg-destructive/10 flex items-center justify-center text-destructive shadow-2xl shadow-destructive/20 rotate-12">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-        </div>
-        <div className="space-y-3">
-          <h1 className="text-3xl font-black italic tracking-tighter">
-            Connection Lost
-          </h1>
-          <p className="text-muted-foreground max-w-sm mx-auto">
-            We encountered a problem while trying to fetch this document's
-            brain.
-          </p>
-        </div>
-        <Link
-          href="/"
-          className="px-8 py-3 rounded-2xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
-        >
-          Return to Hub
-        </Link>
       </div>
     );
 
@@ -209,7 +171,7 @@ export default function DocumentUploadPage({
                       #{idx + 1}
                     </div>
                     <p className="text-foreground/80 italic font-medium leading-relaxed group-hover:text-foreground transition-colors">
-                      "{result.content}"
+                      &quot;{result.content}&quot;
                     </p>
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t border-border/30 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
@@ -287,7 +249,7 @@ export default function DocumentUploadPage({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSubmit(e as any);
+                handleSubmit(e as unknown as React.FormEvent);
               }
             }}
           ></textarea>
