@@ -27,7 +27,7 @@ export async function documentSearch({
 }: SearchProps): Promise<SemanticSearchResult[]> {
   try {
     const response = await fetch(
-      `http://localhost:3000/api/document/${documentId}/search`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/document/${documentId}/search`,
       {
         method: "POST",
         headers: {
@@ -54,7 +54,7 @@ export async function documentAnalyze({
 }: SearchProps): Promise<string> {
   try {
     const response = await fetch(
-      `http://localhost:3000/api/document/${documentId}/analyze`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/document/${documentId}/analyze`,
       {
         method: "POST",
         headers: {
