@@ -10,11 +10,9 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'https://ai-powered-document-analyzer.vercel.app',
-      process.env.FRONTEND_URL,
-    ].filter((url) => !!url),
+    origin: ['http://localhost:3000', process.env.FRONTEND_URL].filter(
+      (url) => !!url,
+    ),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

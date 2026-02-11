@@ -4,23 +4,22 @@ services:
       context: ./api
       dockerfile: Dockerfile
     container_name: doc-analyzer-api
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_SSL: "true"
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    env_file:
+      - ./api/.env
     ports:
-      - "3000:3000"
+      - "3001:3000"
 
   cli:
     build:
       context: ./cli
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
     container_name: doc-analyzer-cli
+    env_file:
+      - ./cli/.env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      - API_URL=http://doc-analyzer-api:3000
+      - HOSTNAME=0.0.0.0
     ports:
-      - "3001:3000"
+      - "3000:3000"

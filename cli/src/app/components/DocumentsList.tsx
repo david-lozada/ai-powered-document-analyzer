@@ -3,12 +3,13 @@ import Link from "next/link";
 import DeleteDocumentButton from "./DeleteDocumentButton";
 
 async function fetchDocuments(): Promise<Document[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/document/documents/0/10`,
-    {
-      next: { tags: ["documents"] },
-    },
-  );
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  console.log(`[DocumentsList] Fetching from: ${baseUrl}`);
+
+  const response = await fetch(`${baseUrl}/api/document/documents/0/10`, {
+    next: { tags: ["documents"] },
+    cache: "no-store", // Ensure we always get the latest list
+  });
   if (!response.ok) throw new Error("Failed to fetch documents");
   return response.json();
 }
