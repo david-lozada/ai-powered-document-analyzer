@@ -26,7 +26,7 @@ export default function DeleteDocumentButton({
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/api/document/${documentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/document/${documentId}`,
         {
           method: "DELETE",
         },

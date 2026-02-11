@@ -24,7 +24,7 @@ function useDocumentUpload(
 
         // 1. Upload the file
         const response = await fetch(
-          "http://localhost:3000/api/document/process",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/document/process`,
           {
             method: "POST",
             body: formData,

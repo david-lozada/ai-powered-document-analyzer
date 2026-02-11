@@ -1,22 +1,22 @@
-import useSWR from 'swr'
-import { Document, DocumentId } from '../types/document.types'
+import useSWR from "swr";
+import { Document, DocumentId } from "../types/document.types";
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function useDocument({ documentId }: {documentId: DocumentId}) {
+function useDocument({ documentId }: { documentId: DocumentId }) {
   const { data, error, isLoading } = useSWR<Document>(
-    `http://localhost:3000/api/document/${documentId}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/api/document/${documentId}`,
     fetcher,
     {
       revalidateOnFocus: false,
-    }
-  )
+    },
+  );
 
   return {
     data,
     error,
-    isLoading
-  }
+    isLoading,
+  };
 }
 
-export default useDocument
+export default useDocument;

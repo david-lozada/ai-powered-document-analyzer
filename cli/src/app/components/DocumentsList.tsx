@@ -4,7 +4,7 @@ import DeleteDocumentButton from "./DeleteDocumentButton";
 
 async function fetchDocuments(): Promise<Document[]> {
   const response = await fetch(
-    "http://localhost:3000/api/document/documents/0/10",
+    `${process.env.NEXT_PUBLIC_API_URL}/api/document/documents/0/10`,
     {
       next: { tags: ["documents"] },
     },
