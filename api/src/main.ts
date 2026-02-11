@@ -7,12 +7,10 @@ declare const module: {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  console.log(process.env.FRONTEND_URL);
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:3000', process.env.FRONTEND_URL].filter(
-      (url) => !!url,
-    ),
+    origin: [process.env.FRONTEND_URL].filter((url) => !!url),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
