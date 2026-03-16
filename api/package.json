@@ -38,7 +38,6 @@
     "cacheable": "1.10.0",
     "class-validator": "0.14.2",
     "dotenv": "16.5.0",
-    "express": "^5.2.1",
     "keyv": "5.3.4",
     "multer": "2.0.1",
     "natural": "^8.1.0",

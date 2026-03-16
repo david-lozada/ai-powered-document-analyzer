@@ -35,7 +35,7 @@ export class GeminiService {
   private async retryWithBackoff<T>(
     operation: () => Promise<T>,
     retries = 5,
-    delay = 1000,
+    delay = 4000,
   ): Promise<T> {
     try {
       return await operation();
@@ -44,16 +44,12 @@ export class GeminiService {
         retries > 0 &&
         (error.status === 429 ||
           error.statusText === 'Too Many Requests' ||
-          error.message?.includes('429') ||
-          error.message?.includes('Quota') ||
-          error.message?.includes('rate limit'))
+          error.message?.includes('429'))
       ) {
-        // If Google tells us to wait (like 45s), we should probably wait a bit longer than 1s
-        const waitTime = error.message?.includes('Quota') ? 10000 : delay;
         console.warn(
-          `Gemini API rate limit hit. Retrying in ${waitTime}ms... (Retries left: ${retries})`,
+          `Gemini API rate limit hit. Retrying in ${delay}ms... (Retries left: ${retries})`,
         );
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.retryWithBackoff(operation, retries - 1, delay * 2);
       }
       throw error;
@@ -65,6 +61,7 @@ export class GeminiService {
       try {
         const result = await this.embeddingModel.embedContent({
           content: { parts: [{ text }] },
+          outputDimensionality: 768,
         } as any);
         return result.embedding.values;
       } catch (error) {
@@ -74,50 +71,10 @@ export class GeminiService {
     });
   }
 
-  async batchGenerateEmbeddings(texts: string[]): Promise<number[][]> {
+  async query(text: string): Promise<string> {
     return this.retryWithBackoff(async () => {
-      try {
-        const result = await this.embeddingModel.batchEmbedContents({
-          requests: texts.map((text) => ({
-            content: { parts: [{ text }], role: 'user' },
-          })),
-        });
-        return result.embeddings.map((e) => e.values);
-      } catch (error) {
-        console.error('Batch embedding generation error:', error);
-        throw error;
-      }
-    });
-  }
-
-  async query(text: string, model?: string): Promise<string> {
-    const activeModel = model
-      ? this.googleAI.getGenerativeModel(
-          { model },
-          { apiVersion: 'v1beta' },
-        )
-      : this.chatModel;
-
-    return this.retryWithBackoff(async () => {
-      const result = await activeModel.generateContent(text);
+      const result = await this.chatModel.generateContent(text);
       return result.response.text();
     });
-  }
-
-  async *streamQuery(text: string, model?: string): AsyncGenerator<string> {
-    const activeModel = model
-      ? this.googleAI.getGenerativeModel(
-          { model },
-          { apiVersion: 'v1beta' },
-        )
-      : this.chatModel;
-
-    const result = await activeModel.generateContentStream(text);
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      if (chunkText) {
-        yield chunkText;
-      }
-    }
   }
 }

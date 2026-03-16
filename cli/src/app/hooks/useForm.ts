@@ -1,8 +1,5 @@
-import React, { useRef, useState } from "react";
-import {
-  documentAnalyzeStream,
-  documentSearch,
-} from "../services/documents";
+import { useRef, useState } from "react";
+import { documentAnalyze, documentSearch } from "../services/documents";
 import { SemanticSearchResult } from "../types/document.types";
 
 function useForm({ documentId }: { documentId: number }) {
@@ -32,11 +29,8 @@ function useForm({ documentId }: { documentId: number }) {
     setIsSubmitting(true);
     try {
       if (askAi) {
-        setAnalysisResponse(""); // Initialize with empty string for streaming
-        const stream = documentAnalyzeStream({ documentId, query: question });
-        for await (const chunk of stream) {
-          setAnalysisResponse((prev: string | null) => (prev || "") + chunk);
-        }
+        const response = await documentAnalyze({ documentId, query: question });
+        setAnalysisResponse(response);
       } else {
         const response = await documentSearch({ documentId, query: question });
         setSearchResponse(response);
