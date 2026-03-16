@@ -48,23 +48,29 @@ export class DocumentService {
 
     // 2. Process chunks as before but now with document reference
     try {
-      const textChunks = await this.chunker.extractTextChunks(file);
+      const rawChunks = await this.chunker.extractTextChunks(file);
+      const textChunks = rawChunks.map((chunk) => ({
+        ...chunk,
+        text: chunk.text.replace(/\0/g, ''), // Fix: Remove null bytes for Postgres compatibility
+      }));
 
-      // Process chunks in batches to avoid hitting rate limits
-      const batchSize = 5;
+      // We use a small batch size of 3 to avoid 429 errors on the Free Tier
+      const batchSize = 3;
       const embeddings: any[] = [];
+
       for (let i = 0; i < textChunks.length; i += batchSize) {
         const batch = textChunks.slice(i, i + batchSize);
-        const batchEmbeddings = await Promise.all(
-          batch.map(async (chunk) => ({
-            content: chunk.text,
-            embedding: toPgvectorString(
-              await this.generateEmbedding(chunk.text),
-            ),
-            page_number: chunk.page,
-            document: { id: document.id }, // Reference the parent document
-          })),
+        const batchVectors = await this.geminiService.batchGenerateEmbeddings(
+          batch.map((c) => c.text),
         );
+
+        const batchEmbeddings = batch.map((chunk, index) => ({
+          content: chunk.text,
+          embedding: toPgvectorString(batchVectors[index]),
+          page_number: chunk.page,
+          document: { id: document.id },
+        }));
+
         embeddings.push(...batchEmbeddings);
       }
 
@@ -136,50 +142,72 @@ export class DocumentService {
   }
 
   /**
-   * Analyze document, get content and fetch the AI
-   * @returns {string} - The response given by the AI
-   * @param query - The user query to analyze the document with
-   * @param documentId - The ID of the actual document to analyze
+   * Analyze document using RAG (Retrieval-Augmented Generation).
+   * Fetches only relevant chunks to reduce prompt size and latency.
    */
-  async analyzeAllChunks(query: string, documentId: number): Promise<string> {
-    // check for cached results first
-    const cacheKey = `ai-response-${documentId}-${query}`;
+  async analyzeWithRAG(
+    query: string,
+    documentId: number,
+    model?: string,
+  ): Promise<string> {
+    const cacheKey = `ai-rag-response-${documentId}-${query}-${model || 'default'}`;
     const cachedText = await this.cacheManager.get<string>(cacheKey);
-    if (cachedText) {
-      return cachedText;
-    }
-    // 1. Fetch all chunks for the document
-    const chunks = await this.documentChunksRepository.find({
-      where: { document: { id: documentId } },
-      order: { page_number: 'ASC' },
-    });
+    if (cachedText) return cachedText;
 
-    // 2. Concatenate all chunk contents
-    const fullText = chunks.map((chunk) => chunk.content).join('\n');
+    // 1. Get relevant chunks via semantic search
+    const results = (await this.semanticSearch(query, documentId, 8)) || [];
+    if (results.length === 0) return 'No relevant information found.';
 
-    // 3. Combine user query with the full text
-    const prompt = `${query}: ${fullText}`;
+    // 2. Build context-aware prompt
+    const context = results.map((r) => r.content).join('\n---\n');
+    const prompt = `Use the following context to answer the user's question.\n\nContext:\n${context}\n\nQuestion: ${query}`;
+
     try {
-      const aiResponse = await this.geminiService.query(prompt);
-      // cache the response
-      await this.cacheManager.set<string>(cacheKey, aiResponse);
-      // 4. Send to AI service
+      const aiResponse = await this.geminiService.query(prompt, model);
+      await this.cacheManager.set(cacheKey, aiResponse);
       return aiResponse;
-    } catch (error: any) {
-      if (
-        error.status === 429 ||
-        error.statusText === 'Too Many Requests' ||
-        error.message?.includes('429')
-      ) {
-        throw new HttpException(
-          'AI Service is currently busy. Retrying automatically...',
-          HttpStatus.TOO_MANY_REQUESTS,
-        );
-      }
+    } catch (error) {
+      this.logger.error('RAG Analysis error:', error);
       throw error;
     }
   }
 
+  /**
+   * Stream RAG Analysis for real-time interaction.
+   */
+  async *streamAnalyzeWithRAG(
+    query: string,
+    documentId: number,
+    model?: string,
+  ): AsyncGenerator<string> {
+    // 1. Get relevant chunks
+    const results = (await this.semanticSearch(query, documentId, 8)) || [];
+    if (results.length === 0) {
+      yield 'No relevant information found.';
+      return;
+    }
+
+    const context = results.map((r) => r.content).join('\n---\n');
+    const prompt = `Use the following context to answer the user's question.\n\nContext:\n${context}\n\nQuestion: ${query}`;
+
+    try {
+      yield* this.geminiService.streamQuery(prompt, model);
+    } catch (error) {
+      this.logger.error('Streaming RAG error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Legacy method - UPDATED to use RAG for better performance
+   */
+  async analyzeAllChunks(
+    query: string,
+    documentId: number,
+    model?: string,
+  ): Promise<string> {
+    return this.analyzeWithRAG(query, documentId, model);
+  }
   /**
    * Retrieves all documents sorted by upload date (newest first)
    * @returns Promise<Document[]> Array of documents

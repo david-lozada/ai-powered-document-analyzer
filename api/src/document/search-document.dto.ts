@@ -8,4 +8,7 @@ export class SearchDocumentDto {
   @IsNumber()
   @IsNotEmpty()
   documentId?: number;
+
+  @IsString()
+  model?: string;
 }

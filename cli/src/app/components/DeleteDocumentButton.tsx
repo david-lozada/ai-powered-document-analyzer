@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "../utils/api";
 
 interface DeleteDocumentButtonProps {
   documentId: number;
@@ -26,7 +27,7 @@ export default function DeleteDocumentButton({
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/document/${documentId}`,
+        `${getApiBaseUrl()}/api/document/${documentId}`,
         {
           method: "DELETE",
         },

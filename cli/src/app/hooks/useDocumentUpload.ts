@@ -4,6 +4,7 @@ import {
   UseDocumentUploadResult,
 } from "@/app/types/document.types";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "../utils/api";
 
 function useDocumentUpload(
   options: UseDocumentUploadOptions,
@@ -24,7 +25,7 @@ function useDocumentUpload(
 
         // 1. Upload the file
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/document/process`,
+          `${getApiBaseUrl()}/api/document/process`,
           {
             method: "POST",
             body: formData,

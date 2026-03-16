@@ -6,9 +6,11 @@ import {
   Get,
   Param,
   Post,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 // import { DocumentDto } from './document.dto';
 import { DocumentService } from './document.service';
@@ -53,7 +55,7 @@ export class DocumentController {
     );
   }
 
-  @Post('/:documentId/analyze') //TODO: omit cache when new param is given
+  @Post('/:documentId/analyze')
   async analyzeDocuments(
     @Body() bodyDto: SearchDocumentDto,
     @Param('documentId') documentId: number,
@@ -65,7 +67,35 @@ export class DocumentController {
     return this.documentService.analyzeAllChunks(
       searchDto.query,
       searchDto.documentId,
+      searchDto.model,
     );
+  }
+
+  @Post('/:documentId/analyze-stream')
+  async streamAnalyzeDocuments(
+    @Body() bodyDto: SearchDocumentDto,
+    @Param('documentId') documentId: number,
+    @Res() res: Response,
+  ) {
+    const searchDto = { ...bodyDto, documentId };
+    if (!searchDto.query || !searchDto.documentId) {
+      throw new BadRequestException('Search query and document are required');
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const stream = this.documentService.streamAnalyzeWithRAG(
+      searchDto.query,
+      searchDto.documentId,
+      searchDto.model,
+    );
+
+    for await (const chunk of stream) {
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+    res.end();
   }
 
   @Get('documents/:skip/:take')

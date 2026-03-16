@@ -2,8 +2,10 @@ import { Document } from "@/app/types/document.types";
 import Link from "next/link";
 import DeleteDocumentButton from "./DeleteDocumentButton";
 
+import { getApiBaseUrl } from "@/app/utils/api";
+
 async function fetchDocuments(): Promise<Document[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = getApiBaseUrl();
   console.log(`[DocumentsList] Fetching from: ${baseUrl}`);
 
   const response = await fetch(`${baseUrl}/api/document/documents/0/10`, {
